@@ -168,13 +168,48 @@ export const importDecklist = (user) => {
                         .then(({data}) => { // Destructure data from the response object
                             const imageURL = data.images.large; // Now data refers to the card object
                             const card_type = data.supertype; 
+                            console.log(imageURL);
                             entry.push(imageURL,card_type)
+
+                            console.log("hi")
+                            let deckData;
+                            deckData = decklistArray.map(card => assembleCard(...card));
+                            if (user === 'self'){
+                                mainDeckData[0] = deckData;
+                            } else {
+                                altDeckData[0] = deckData;
+                            };
+                            if (failedText.style.display === 'none'){
+                                if (p1[0]){
+                                    show('p1Box', p1Button);
+                                } else if (user === 'self'){
+                                    show('p2Box', p2Button);
+                                };
+                            };
+                            importButton.disabled = false;
+                        
+                            reset(user, true, true, true, false);
+                            if (!(user === 'opp' && !p1[0])){
+                                appendMessage(user, determineUsername(user) + ' imported deck', 'announcement', true);
+                            } else {
+                                invalid.style.display = 'block';
+                            };
+                        
+                            if (user === 'self'){
+                                const oUser = user === 'self' ? 'opp' : 'self';
+                                const data = {
+                                    roomId : roomId[0],
+                                    deckData : mainDeckData[0],
+                                    user: oUser
+                                };
+                                socket.emit('deckData', data);
+                            };
                         })
                         .catch((error) => {
                             console.error('Error:', error);
                         });
             
-                    } else {
+                    } else {//never will hit these are all new cards -- remove
                         console.log("before first and second check plus split");
                         let [firstPart, secondPart] = set.split(/(?<=\S)\s/); //possibly change 
                         if (firstPart && secondPart) { //make set temporarily have a leading dollar sign beforhand for old cards 
@@ -195,44 +230,45 @@ export const importDecklist = (user) => {
                         };
                     };
                 });      
-                let deckData;
-                deckData = decklistArray.map(card => assembleCard(...card));
-                if (user === 'self'){
-                    mainDeckData[0] = deckData;
-                } else {
-                    altDeckData[0] = deckData;
-                };
-                if (failedText.style.display === 'none'){
-                    if (p1[0]){
-                        show('p1Box', p1Button);
-                    } else if (user === 'self'){
-                        show('p2Box', p2Button);
-                    };
-                };
-                importButton.disabled = false;
+                // console.log("hi")
+                // let deckData;
+                // deckData = decklistArray.map(card => assembleCard(...card));
+                // if (user === 'self'){
+                //     mainDeckData[0] = deckData;
+                // } else {
+                //     altDeckData[0] = deckData;
+                // };
+                // if (failedText.style.display === 'none'){
+                //     if (p1[0]){
+                //         show('p1Box', p1Button);
+                //     } else if (user === 'self'){
+                //         show('p2Box', p2Button);
+                //     };
+                // };
+                // importButton.disabled = false;
             
-                reset(user, true, true, true, false);
-                if (!(user === 'opp' && !p1[0])){
-                    appendMessage(user, determineUsername(user) + ' imported deck', 'announcement', true);
-                } else {
-                    invalid.style.display = 'block';
-                };
+                // reset(user, true, true, true, false);
+                // if (!(user === 'opp' && !p1[0])){
+                //     appendMessage(user, determineUsername(user) + ' imported deck', 'announcement', true);
+                // } else {
+                //     invalid.style.display = 'block';
+                // };
             
-                if (user === 'self'){
-                    const oUser = user === 'self' ? 'opp' : 'self';
-                    const data = {
-                        roomId : roomId[0],
-                        deckData : mainDeckData[0],
-                        user: oUser
-                    };
-                    socket.emit('deckData', data);
-                };
+                // if (user === 'self'){
+                //     const oUser = user === 'self' ? 'opp' : 'self';
+                //     const data = {
+                //         roomId : roomId[0],
+                //         deckData : mainDeckData[0],
+                //         user: oUser
+                //     };
+                //     socket.emit('deckData', data);
+                // };
             })
             .catch((error) => {
                 console.error('Error:', error);
             });
 
-        } else {
+        } else {//not an old card no need for get request made below 
             //ptcglive conversion for GG/TG cards (the alt art bs) (don't apply to promo sets)
             line = line.replace(/(?!PR-)(\w{2,3})-(\w{2,3}) (\d+)/g, '$1 $2$3');
             //special case for double crisis set
