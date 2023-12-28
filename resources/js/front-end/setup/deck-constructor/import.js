@@ -41,6 +41,13 @@ export const importDecklist = (user) => {
 
     const decklist = user === 'self' ? mainDeckImportInput.value : altDeckImportInput.value;
 
+    if (!decklist) {
+        console.log("killed");
+        failedText.style.display = 'block';      
+        importButton.disabled = false;
+        return;
+    };
+
     const energies = {
         'Fire Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_R_R_EN.png',
         'Grass Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_G_R_EN.png',
@@ -89,6 +96,29 @@ export const importDecklist = (user) => {
         // Return true if both conditions are met
         return hasDash && hasNumber;
     } 
+
+
+    function waitForVariableValue(variable, targetValue, interval = 1, timeout = 1000000) {
+        return new Promise((resolve, reject) => {
+            const startTime = Date.now();
+    
+            function checkValue() {
+                if (variable === targetValue) {
+                    resolve();
+                } else if (Date.now() - startTime >= timeout) {
+                    reject(new Error('Timeout: Variable did not reach the desired value within the specified time.'));
+                } else {
+                    setTimeout(checkValue, interval);
+                }
+            }
+    
+            checkValue();
+        });
+    }
+
+
+
+
   
     const regexWithSet = /(\d+) (.+?) (\w{2,3}) (\d+[a-zA-Z]?)/;
     const regexWithPRSet = /(\d+) (.+?) (PR-\w{2,3}) (\d+)/;
@@ -102,175 +132,21 @@ export const importDecklist = (user) => {
     const lines = decklist.split('\n');
     
     let card_id;
+    let lastPOSTIndex = 0;
 
     // Process each line
     lines.forEach(line => {
-        console.log(line)
-        console.log("line")
+
         line = line.trim(); // Remove leading and trailing white spaces
 
         let splitline = line.split(' ');
-        console.log(splitline)
 
-        const potential_card_id = splitline[2];//potentially put in try catch to avoid index out of bounds (line doesn't have 3 words)
-        console.log(potential_card_id)
+        const potential_card_id = splitline[2]; //potentially put in try catch to avoid index out of bounds (line doesn't have 3 words)
 
         const is_old_card = potential_card_id ? hasDashAndNumber(potential_card_id) : false;
-        console.log(is_old_card)
+        
+        if (!is_old_card) { //if its a new card use new card procedure 
 
-        if (is_old_card) {
-            //assign values to card attributes  
-            const quantity = splitline[0];
-            const name = splitline[1];
-            card_id = potential_card_id;
-
-            fetch('https://api.pokemontcg.io/v2/cards/' + card_id, { //Initiate GET Request 
-                method: 'GET',
-                headers: {
-                    'X-Api-Key': 'cde33a60-5d8a-414e-ae04-b447090dd6ba'
-                }
-            })
-            .then(response => response.json())
-            .then(({data}) => { // Destructure data from the response object
-                const set = data.set.name; // Now data refers to the card object
-                decklistArray.push([parseInt(quantity), name, "$" + set]); //dollar sign is used to indicate that it is an old card (Pre-2011)
-                console.log(quantity)
-                console.log(name)
-                console.log(set)
-                console.log(decklistArray[0])
-
-                if (decklistArray.length < 1) {
-                    console.log("killed");
-                    failedText.style.display = 'block';      
-                    importButton.disabled = false;
-                    return;
-                };
-            
-                console.log(decklistArray[0]);
-                decklistArray.forEach((entry) => {
-                    let [q, name, set] = entry;
-            
-                    const energyUrl = energies[name];
-            
-                    if (energyUrl) {
-                        entry.push(energyUrl);
-                        entry.push('energy');
-                        console.log("energy");
-                    } else if (set[0] === '$') { //check to see if card is an old card, if so use ptcg.io API to retrieve image URL and card type
-                        console.log("entered");
-                        set = set.substring(1); //remove first char i.e. $ 
-            
-                        fetch('https://api.pokemontcg.io/v2/cards/' + card_id, { //Initiate GET Request 
-                            method: 'GET',
-                            headers: {
-                                'X-Api-Key': 'cde33a60-5d8a-414e-ae04-b447090dd6ba'
-                            }
-                        })
-                        .then(response => response.json())
-                        .then(({data}) => { // Destructure data from the response object
-                            const imageURL = data.images.large; // Now data refers to the card object
-                            const card_type = data.supertype; 
-                            console.log(imageURL);
-                            entry.push(imageURL,card_type)
-
-                            console.log("hi")
-                            let deckData;
-                            deckData = decklistArray.map(card => assembleCard(...card));
-                            if (user === 'self'){
-                                mainDeckData[0] = deckData;
-                            } else {
-                                altDeckData[0] = deckData;
-                            };
-                            if (failedText.style.display === 'none'){
-                                if (p1[0]){
-                                    show('p1Box', p1Button);
-                                } else if (user === 'self'){
-                                    show('p2Box', p2Button);
-                                };
-                            };
-                            importButton.disabled = false;
-                        
-                            reset(user, true, true, true, false);
-                            if (!(user === 'opp' && !p1[0])){
-                                appendMessage(user, determineUsername(user) + ' imported deck', 'announcement', true);
-                            } else {
-                                invalid.style.display = 'block';
-                            };
-                        
-                            if (user === 'self'){
-                                const oUser = user === 'self' ? 'opp' : 'self';
-                                const data = {
-                                    roomId : roomId[0],
-                                    deckData : mainDeckData[0],
-                                    user: oUser
-                                };
-                                socket.emit('deckData', data);
-                            };
-                        })
-                        .catch((error) => {
-                            console.error('Error:', error);
-                        });
-            
-                    } else {//never will hit these are all new cards -- remove
-                        console.log("before first and second check plus split");
-                        let [firstPart, secondPart] = set.split(/(?<=\S)\s/); //possibly change 
-                        if (firstPart && secondPart) { //make set temporarily have a leading dollar sign beforhand for old cards 
-                            console.log("first and second");
-                            if (specialCases[firstPart]){
-                                firstPart = specialCases[firstPart];
-                            };
-                            const paddedSecondPart = secondPart.replace(/^(\d+)([a-zA-Z])?$/, (_, digits, letter) => {
-                                const paddedDigits = digits.length < 3 ? digits.padStart(3, '0') : digits;
-                                return letter ? paddedDigits + letter : paddedDigits;
-                            });
-                            const url = `https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/${firstPart.replace(/ /g, '/')}/${firstPart.replace(/ /g, '_')}_${paddedSecondPart}_R_EN.png`;
-                            entry.push(url);
-                            entry.push(getCardType(firstPart, secondPart));
-                        } else {
-                            console.log("else");
-                            failedText.style.display = 'block';
-                        };
-                    };
-                });      
-                // console.log("hi")
-                // let deckData;
-                // deckData = decklistArray.map(card => assembleCard(...card));
-                // if (user === 'self'){
-                //     mainDeckData[0] = deckData;
-                // } else {
-                //     altDeckData[0] = deckData;
-                // };
-                // if (failedText.style.display === 'none'){
-                //     if (p1[0]){
-                //         show('p1Box', p1Button);
-                //     } else if (user === 'self'){
-                //         show('p2Box', p2Button);
-                //     };
-                // };
-                // importButton.disabled = false;
-            
-                // reset(user, true, true, true, false);
-                // if (!(user === 'opp' && !p1[0])){
-                //     appendMessage(user, determineUsername(user) + ' imported deck', 'announcement', true);
-                // } else {
-                //     invalid.style.display = 'block';
-                // };
-            
-                // if (user === 'self'){
-                //     const oUser = user === 'self' ? 'opp' : 'self';
-                //     const data = {
-                //         roomId : roomId[0],
-                //         deckData : mainDeckData[0],
-                //         user: oUser
-                //     };
-                //     socket.emit('deckData', data);
-                // };
-            })
-            .catch((error) => {
-                console.error('Error:', error);
-            });
-
-        } else {//not an old card no need for get request made below 
             //ptcglive conversion for GG/TG cards (the alt art bs) (don't apply to promo sets)
             line = line.replace(/(?!PR-)(\w{2,3})-(\w{2,3}) (\d+)/g, '$1 $2$3');
             //special case for double crisis set
@@ -295,88 +171,155 @@ export const importDecklist = (user) => {
                 decklistArray.push([parseInt(quantity), name, '']);
             }
 
-            if (decklistArray.length < 1) {
-                console.log("killed");
-                failedText.style.display = 'block';      
-                importButton.disabled = false;
-                return;
-            };
-        
-            console.log(decklistArray[0]);
-            decklistArray.forEach((entry) => {
-                let [q, name, set] = entry;
-        
-                const energyUrl = energies[name];
-        
-                if (energyUrl) {
-                    entry.push(energyUrl);
-                    entry.push('energy');
-                    console.log("energy");
-                } else if (set[0] === '$') { //check to see if card is an old card, if so use ptcg.io API to retrieve image URL and card type
-                    console.log("entered");
-                    set = set.substring(1); //remove first char i.e. $ 
-        
-                    fetch('https://api.pokemontcg.io/v2/cards/' + card_id, { //Initiate GET Request 
-                        method: 'GET',
-                        headers: {
-                            'X-Api-Key': 'cde33a60-5d8a-414e-ae04-b447090dd6ba'
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(({data}) => { // Destructure data from the response object
-                        const imageURL = data.images.large; // Now data refers to the card object
-                        const card_type = data.supertype; 
-                        entry.push(imageURL,card_type)
-                    })
-                    .catch((error) => {
-                        console.error('Error:', error);
-                    });
-        
-                } else {
-                    console.log("before first and second check plus split");
-                    let [firstPart, secondPart] = set.split(/(?<=\S)\s/); //possibly change 
-                    if (firstPart && secondPart) { //make set temporarily have a leading dollar sign beforhand for old cards 
-                        console.log("first and second");
-                        if (specialCases[firstPart]){
-                            firstPart = specialCases[firstPart];
-                        };
-                        const paddedSecondPart = secondPart.replace(/^(\d+)([a-zA-Z])?$/, (_, digits, letter) => {
-                            const paddedDigits = digits.length < 3 ? digits.padStart(3, '0') : digits;
-                            return letter ? paddedDigits + letter : paddedDigits;
-                        });
-                        const url = `https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/${firstPart.replace(/ /g, '/')}/${firstPart.replace(/ /g, '_')}_${paddedSecondPart}_R_EN.png`;
-                        entry.push(url);
-                        entry.push(getCardType(firstPart, secondPart));
-                    } else {
-                        console.log("else");
-                        failedText.style.display = 'block';
-                    };
+        } else { // if it is an old card keep track of the lastPOSTIndex
+            lastPOSTIndex++;
+        } 
+    });
+
+    decklistArray.forEach((entry) => {
+        const [q, name, set] = entry;
+
+        const energyUrl = energies[name];
+
+        if (energyUrl) {
+            entry.push(energyUrl);
+            entry.push('energy');
+        } else {
+            let [firstPart, secondPart] = set.split(/(?<=\S)\s/); //possibly change 
+            if (firstPart && secondPart) { 
+                if (specialCases[firstPart]) {
+                    firstPart = specialCases[firstPart];
                 };
-            });      
+                const paddedSecondPart = secondPart.replace(/^(\d+)([a-zA-Z])?$/, (_, digits, letter) => {
+                    const paddedDigits = digits.length < 3 ? digits.padStart(3, '0') : digits;
+                    return letter ? paddedDigits + letter : paddedDigits;
+                });
+                const url = `https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/${firstPart.replace(/ /g, '/')}/${firstPart.replace(/ /g, '_')}_${paddedSecondPart}_R_EN.png`;
+                entry.push(url);
+                entry.push(getCardType(firstPart, secondPart));
+            } else {
+                failedText.style.display = 'block';
+            };
+        };
+    });
+
+
+
+
+    //////////////////////Only 1 socket.emit(deck data) should ever be invoked ///////////////////////////////////////////
+
+
+
+
+    if(lastPOSTIndex === 0) { //there are no new cards in this deck, no need to make post requests to ptcg.io API
+        let deckData;
+        deckData = decklistArray.map(card => assembleCard(...card));
+        if (user === 'self') {
+            mainDeckData[0] = deckData;
+        } else {
+            altDeckData[0] = deckData;
+        };
+        if (failedText.style.display === 'none') {
+            if (p1[0]) {
+                show('p1Box', p1Button);
+            } else if (user === 'self') {
+                show('p2Box', p2Button);
+            };
+        };
+        importButton.disabled = false;
+    
+        reset(user, true, true, true, false);
+        if (!(user === 'opp' && !p1[0])) {
+            appendMessage(user, determineUsername(user) + ' imported deck', 'announcement', true);
+        } else {
+            invalid.style.display = 'block';
+        };
+    
+        if (user === 'self') {
+            const oUser = user === 'self' ? 'opp' : 'self';
+            const data = {
+                roomId : roomId[0],
+                deckData : mainDeckData[0],
+                user: oUser
+            };
+            socket.emit('deckData', data);
+        };
+    } else { //there are new cards in this deck and post requests need to be made to ptcg.io
+        let lastPOSTFlag = false;
+        let numOfPostRequestsDone = 0;
+        // Process each line
+        lines.forEach(line => {
+
+            line = line.trim(); // Remove leading and trailing white spaces
+
+            let splitline = line.split(' ');
+
+            const potential_card_id = splitline[2]; //potentially put in try catch to avoid index out of bounds (line doesn't have 3 words)
+
+            const is_old_card = potential_card_id ? hasDashAndNumber(potential_card_id) : false;
+        
+            if (is_old_card) { //if its an old card initiate GET request to ptcg.io API
+
+                
+
+                // assign values to card attributes  
+                const quantity = splitline[0];
+                const name = splitline[1];
+                card_id = potential_card_id;
+                console.log(card_id);
+                fetch('https://api.pokemontcg.io/v2/cards/' + card_id, {
+                    method: 'GET',
+                    headers: {
+                        'X-Api-Key': 'cde33a60-5d8a-414e-ae04-b447090dd6ba'
+                    }
+                })
+                .then(response => response.json())
+                .then(({data}) => {
+                    // Destructure data from the response object
+                    const set = data.set.name; 
+                    const imageURL = data.images.large; 
+                    const card_type = data.supertype;
+                    decklistArray.push([parseInt(quantity), name, set, imageURL, card_type]);
+                    numOfPostRequestsDone++; 
+                    lastPOSTFlag = lastPOSTIndex === numOfPostRequestsDone ? true : false;
+                    console.log(decklistArray[0]);
+                })
+                .catch((error) => {
+                    console.error('Error:', error);
+                });
+            }
+        });
+        console.log(numOfPostRequestsDone);
+        console.log(lastPOSTIndex);
+        console.log(lastPOSTFlag);
+        let terminationFlag = false;
+
+        while (!lastPOSTFlag) { //no short-circuiting POST request  
+            console.log("passed guard");
             let deckData;
             deckData = decklistArray.map(card => assembleCard(...card));
-            if (user === 'self'){
+            if (user === 'self') {
                 mainDeckData[0] = deckData;
             } else {
                 altDeckData[0] = deckData;
             };
-            if (failedText.style.display === 'none'){
-                if (p1[0]){
+            if (failedText.style.display === 'none') {
+                if (p1[0]) {
                     show('p1Box', p1Button);
-                } else if (user === 'self'){
+                } else if (user === 'self') {
                     show('p2Box', p2Button);
                 };
             };
             importButton.disabled = false;
         
             reset(user, true, true, true, false);
-            if (!(user === 'opp' && !p1[0])){
+            if (!(user === 'opp' && !p1[0])) {
                 appendMessage(user, determineUsername(user) + ' imported deck', 'announcement', true);
             } else {
                 invalid.style.display = 'block';
             };
         
-            if (user === 'self'){
+            if (user === 'self') {
                 const oUser = user === 'self' ? 'opp' : 'self';
                 const data = {
                     roomId : roomId[0],
@@ -386,7 +329,9 @@ export const importDecklist = (user) => {
                 socket.emit('deckData', data);
             };
         }
-    });
+        console.log("after guard");
+    }
+
 }
             
     // const url = "http://127.0.0.1:8000/deck";
