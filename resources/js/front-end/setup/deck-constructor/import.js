@@ -41,45 +41,6 @@ export const importDecklist = (user) => {
 
     const decklist = user === 'self' ? mainDeckImportInput.value : altDeckImportInput.value;
 
-    const energies = {
-        'Fire Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_R_R_EN.png',
-        'Grass Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_G_R_EN.png',
-        'Fairy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/TEU/TEU_Y_R_EN.png',
-        'Darkness Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_D_R_EN.png',
-        'Lightning Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_L_R_EN.png',
-        'Fighting Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_F_R_EN.png',
-        'Psychic Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_P_R_EN.png',
-        'Metal Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_M_R_EN.png',
-        'Water Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_W_R_EN.png',
-        'Basic Fire Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_R_R_EN.png',
-        'Basic Grass Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_G_R_EN.png',
-        'Basic Fairy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/TEU/TEU_Y_R_EN.png',
-        'Basic Darkness Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_D_R_EN.png',
-        'Basic Lightning Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_L_R_EN.png',
-        'Basic Fighting Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_F_R_EN.png',
-        'Basic Psychic Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_P_R_EN.png',
-        'Basic Metal Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_M_R_EN.png',
-        'Basic Water Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_W_R_EN.png',
-        'Basic {W} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_W_R_EN.png',
-        'Basic {R} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_R_R_EN.png',
-        'Basic {G} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_G_R_EN.png',
-        'Basic {Y} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/TEU/TEU_Y_R_EN.png',
-        'Basic {D} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_D_R_EN.png',
-        'Basic {L} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_L_R_EN.png',
-        'Basic {F} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_F_R_EN.png',
-        'Basic {P} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_P_R_EN.png',
-        'Basic {M} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_M_R_EN.png'
-    };
-
-    const specialCases = {
-        'PR-SV' : 'SVP',
-        'PR-SW' : 'SSP',
-        'PR-SM' : 'SMP',
-        'PR-XY' : 'XYP',
-        'PR-BLW' : 'BWP',
-        'PR-HS' : 'HSP'
-    }
-
     //helper function (will determine if card is not supported by limitless in which cause will use ptcg.io API)
     function hasDashAndNumber(string) {
         // Check if the string contains a dash and a number
@@ -136,97 +97,6 @@ export const importDecklist = (user) => {
                 console.log(name)
                 console.log(set)
                 console.log(decklistArray[0])
-
-                if (decklistArray.length < 1) {
-                    console.log("killed");
-                    failedText.style.display = 'block';      
-                    importButton.disabled = false;
-                    return;
-                };
-            
-                console.log(decklistArray[0]);
-                decklistArray.forEach((entry) => {
-                    let [q, name, set] = entry;
-            
-                    const energyUrl = energies[name];
-            
-                    if (energyUrl) {
-                        entry.push(energyUrl);
-                        entry.push('energy');
-                        console.log("energy");
-                    } else if (set[0] === '$') { //check to see if card is an old card, if so use ptcg.io API to retrieve image URL and card type
-                        console.log("entered");
-                        set = set.substring(1); //remove first char i.e. $ 
-            
-                        fetch('https://api.pokemontcg.io/v2/cards/' + card_id, { //Initiate GET Request 
-                            method: 'GET',
-                            headers: {
-                                'X-Api-Key': 'cde33a60-5d8a-414e-ae04-b447090dd6ba'
-                            }
-                        })
-                        .then(response => response.json())
-                        .then(({data}) => { // Destructure data from the response object
-                            const imageURL = data.images.large; // Now data refers to the card object
-                            const card_type = data.supertype; 
-                            entry.push(imageURL,card_type)
-                        })
-                        .catch((error) => {
-                            console.error('Error:', error);
-                        });
-            
-                    } else {
-                        console.log("before first and second check plus split");
-                        let [firstPart, secondPart] = set.split(/(?<=\S)\s/); //possibly change 
-                        if (firstPart && secondPart) { //make set temporarily have a leading dollar sign beforhand for old cards 
-                            console.log("first and second");
-                            if (specialCases[firstPart]){
-                                firstPart = specialCases[firstPart];
-                            };
-                            const paddedSecondPart = secondPart.replace(/^(\d+)([a-zA-Z])?$/, (_, digits, letter) => {
-                                const paddedDigits = digits.length < 3 ? digits.padStart(3, '0') : digits;
-                                return letter ? paddedDigits + letter : paddedDigits;
-                            });
-                            const url = `https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/${firstPart.replace(/ /g, '/')}/${firstPart.replace(/ /g, '_')}_${paddedSecondPart}_R_EN.png`;
-                            entry.push(url);
-                            entry.push(getCardType(firstPart, secondPart));
-                        } else {
-                            console.log("else");
-                            failedText.style.display = 'block';
-                        };
-                    };
-                });      
-                let deckData;
-                deckData = decklistArray.map(card => assembleCard(...card));
-                if (user === 'self'){
-                    mainDeckData[0] = deckData;
-                } else {
-                    altDeckData[0] = deckData;
-                };
-                if (failedText.style.display === 'none'){
-                    if (p1[0]){
-                        show('p1Box', p1Button);
-                    } else if (user === 'self'){
-                        show('p2Box', p2Button);
-                    };
-                };
-                importButton.disabled = false;
-            
-                reset(user, true, true, true, false);
-                if (!(user === 'opp' && !p1[0])){
-                    appendMessage(user, determineUsername(user) + ' imported deck', 'announcement', true);
-                } else {
-                    invalid.style.display = 'block';
-                };
-            
-                if (user === 'self'){
-                    const oUser = user === 'self' ? 'opp' : 'self';
-                    const data = {
-                        roomId : roomId[0],
-                        deckData : mainDeckData[0],
-                        user: oUser
-                    };
-                    socket.emit('deckData', data);
-                };
             })
             .catch((error) => {
                 console.error('Error:', error);
@@ -256,99 +126,136 @@ export const importDecklist = (user) => {
                 const [, quantity, name] = matchWithoutSet;
                 decklistArray.push([parseInt(quantity), name, '']);
             }
-
-            if (decklistArray.length < 1) {
-                console.log("killed");
-                failedText.style.display = 'block';      
-                importButton.disabled = false;
-                return;
-            };
-        
-            console.log(decklistArray[0]);
-            decklistArray.forEach((entry) => {
-                let [q, name, set] = entry;
-        
-                const energyUrl = energies[name];
-        
-                if (energyUrl) {
-                    entry.push(energyUrl);
-                    entry.push('energy');
-                    console.log("energy");
-                } else if (set[0] === '$') { //check to see if card is an old card, if so use ptcg.io API to retrieve image URL and card type
-                    console.log("entered");
-                    set = set.substring(1); //remove first char i.e. $ 
-        
-                    fetch('https://api.pokemontcg.io/v2/cards/' + card_id, { //Initiate GET Request 
-                        method: 'GET',
-                        headers: {
-                            'X-Api-Key': 'cde33a60-5d8a-414e-ae04-b447090dd6ba'
-                        }
-                    })
-                    .then(response => response.json())
-                    .then(({data}) => { // Destructure data from the response object
-                        const imageURL = data.images.large; // Now data refers to the card object
-                        const card_type = data.supertype; 
-                        entry.push(imageURL,card_type)
-                    })
-                    .catch((error) => {
-                        console.error('Error:', error);
-                    });
-        
-                } else {
-                    console.log("before first and second check plus split");
-                    let [firstPart, secondPart] = set.split(/(?<=\S)\s/); //possibly change 
-                    if (firstPart && secondPart) { //make set temporarily have a leading dollar sign beforhand for old cards 
-                        console.log("first and second");
-                        if (specialCases[firstPart]){
-                            firstPart = specialCases[firstPart];
-                        };
-                        const paddedSecondPart = secondPart.replace(/^(\d+)([a-zA-Z])?$/, (_, digits, letter) => {
-                            const paddedDigits = digits.length < 3 ? digits.padStart(3, '0') : digits;
-                            return letter ? paddedDigits + letter : paddedDigits;
-                        });
-                        const url = `https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/${firstPart.replace(/ /g, '/')}/${firstPart.replace(/ /g, '_')}_${paddedSecondPart}_R_EN.png`;
-                        entry.push(url);
-                        entry.push(getCardType(firstPart, secondPart));
-                    } else {
-                        console.log("else");
-                        failedText.style.display = 'block';
-                    };
-                };
-            });      
-            let deckData;
-            deckData = decklistArray.map(card => assembleCard(...card));
-            if (user === 'self'){
-                mainDeckData[0] = deckData;
-            } else {
-                altDeckData[0] = deckData;
-            };
-            if (failedText.style.display === 'none'){
-                if (p1[0]){
-                    show('p1Box', p1Button);
-                } else if (user === 'self'){
-                    show('p2Box', p2Button);
-                };
-            };
-            importButton.disabled = false;
-        
-            reset(user, true, true, true, false);
-            if (!(user === 'opp' && !p1[0])){
-                appendMessage(user, determineUsername(user) + ' imported deck', 'announcement', true);
-            } else {
-                invalid.style.display = 'block';
-            };
-        
-            if (user === 'self'){
-                const oUser = user === 'self' ? 'opp' : 'self';
-                const data = {
-                    roomId : roomId[0],
-                    deckData : mainDeckData[0],
-                    user: oUser
-                };
-                socket.emit('deckData', data);
-            };
         }
     });
+        
+    // if (decklistArray.length < 1) {
+    //     console.log("killed");
+    //     failedText.style.display = 'block';      
+    //     importButton.disabled = false;
+    //     return;
+    // };
+    const energies = {
+        'Fire Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_R_R_EN.png',
+        'Grass Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_G_R_EN.png',
+        'Fairy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/TEU/TEU_Y_R_EN.png',
+        'Darkness Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_D_R_EN.png',
+        'Lightning Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_L_R_EN.png',
+        'Fighting Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_F_R_EN.png',
+        'Psychic Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_P_R_EN.png',
+        'Metal Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_M_R_EN.png',
+        'Water Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_W_R_EN.png',
+        'Basic Fire Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_R_R_EN.png',
+        'Basic Grass Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_G_R_EN.png',
+        'Basic Fairy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/TEU/TEU_Y_R_EN.png',
+        'Basic Darkness Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_D_R_EN.png',
+        'Basic Lightning Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_L_R_EN.png',
+        'Basic Fighting Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_F_R_EN.png',
+        'Basic Psychic Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_P_R_EN.png',
+        'Basic Metal Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_M_R_EN.png',
+        'Basic Water Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_W_R_EN.png',
+        'Basic {W} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_W_R_EN.png',
+        'Basic {R} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_R_R_EN.png',
+        'Basic {G} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_G_R_EN.png',
+        'Basic {Y} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/TEU/TEU_Y_R_EN.png',
+        'Basic {D} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_D_R_EN.png',
+        'Basic {L} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_L_R_EN.png',
+        'Basic {F} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_F_R_EN.png',
+        'Basic {P} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_P_R_EN.png',
+        'Basic {M} Energy Energy': 'https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/BRS/BRS_M_R_EN.png'
+    };
+
+    const specialCases = {
+        'PR-SV' : 'SVP',
+        'PR-SW' : 'SSP',
+        'PR-SM' : 'SMP',
+        'PR-XY' : 'XYP',
+        'PR-BLW' : 'BWP',
+        'PR-HS' : 'HSP'
+    }
+    console.log(decklistArray[0])
+    decklistArray.forEach((entry) => {
+        let [q, name, set] = entry;
+
+        const energyUrl = energies[name];
+
+        if (energyUrl) {
+            entry.push(energyUrl);
+            entry.push('energy');
+            console.log("energy");
+        } else if (set[0] === '$') { //check to see if card is an old card, if so use ptcg.io API to retrieve image URL and card type
+            console.log("entered");
+            set = set.substring(1); //remove first char i.e. $ 
+
+            fetch('https://api.pokemontcg.io/v2/cards/' + card_id, { //Initiate GET Request 
+                method: 'GET',
+                headers: {
+                    'X-Api-Key': 'cde33a60-5d8a-414e-ae04-b447090dd6ba'
+                }
+            })
+            .then(response => response.json())
+            .then(({data}) => { // Destructure data from the response object
+                const imageURL = data.images.large; // Now data refers to the card object
+                const card_type = data.supertype; 
+                entry.push(imageURL,card_type)
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+
+        } else {
+            console.log("before first and second check plus split");
+            let [firstPart, secondPart] = set.split(/(?<=\S)\s/); //possibly change 
+            if (firstPart && secondPart) { //make set temporarily have a leading dollar sign beforhand for old cards 
+                console.log("first and second");
+                if (specialCases[firstPart]){
+                    firstPart = specialCases[firstPart];
+                };
+                const paddedSecondPart = secondPart.replace(/^(\d+)([a-zA-Z])?$/, (_, digits, letter) => {
+                    const paddedDigits = digits.length < 3 ? digits.padStart(3, '0') : digits;
+                    return letter ? paddedDigits + letter : paddedDigits;
+                });
+                const url = `https://limitlesstcg.nyc3.digitaloceanspaces.com/tpci/${firstPart.replace(/ /g, '/')}/${firstPart.replace(/ /g, '_')}_${paddedSecondPart}_R_EN.png`;
+                entry.push(url);
+                entry.push(getCardType(firstPart, secondPart));
+            } else {
+                console.log("else");
+                failedText.style.display = 'block';
+            };
+        };
+    });      
+    let deckData;
+    deckData = decklistArray.map(card => assembleCard(...card));
+    if (user === 'self'){
+        mainDeckData[0] = deckData;
+    } else {
+        altDeckData[0] = deckData;
+    };
+    if (failedText.style.display === 'none'){
+        if (p1[0]){
+            show('p1Box', p1Button);
+        } else if (user === 'self'){
+            show('p2Box', p2Button);
+        };
+    };
+    importButton.disabled = false;
+
+    reset(user, true, true, true, false);
+    if (!(user === 'opp' && !p1[0])){
+        appendMessage(user, determineUsername(user) + ' imported deck', 'announcement', true);
+    } else {
+        invalid.style.display = 'block';
+    };
+
+    if (user === 'self'){
+        const oUser = user === 'self' ? 'opp' : 'self';
+        const data = {
+            roomId : roomId[0],
+            deckData : mainDeckData[0],
+            user: oUser
+        };
+        socket.emit('deckData', data);
+    };
 }
             
     // const url = "http://127.0.0.1:8000/deck";
