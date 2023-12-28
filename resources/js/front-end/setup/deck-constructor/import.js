@@ -106,6 +106,8 @@ export const importDecklist = (user) => {
     // Process each line
     lines.forEach(line => {
         console.log(line)
+        console.log("line")
+        line = line.trim(); // Remove leading and trailing white spaces
 
         let splitline = line.split(' ');
         console.log(splitline)
@@ -113,7 +115,7 @@ export const importDecklist = (user) => {
         const potential_card_id = splitline[2];//potentially put in try catch to avoid index out of bounds (line doesn't have 3 words)
         console.log(potential_card_id)
 
-        const is_old_card = hasDashAndNumber(potential_card_id)
+        const is_old_card = potential_card_id ? hasDashAndNumber(potential_card_id) : false;
         console.log(is_old_card)
 
         if (is_old_card) {
